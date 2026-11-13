@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Othello</title>
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/app.css" />
+    <script type="module" src="js/app.js"></script>
+  </head>
+  <body>
+    <div class="page">
+      <header class="masthead">
+        <h1 class="wordmark" aria-label="Othello">
+          <span class="wordmark-disc wordmark-disc-dark" aria-hidden="true"></span><span aria-hidden="true">thell</span><span class="wordmark-disc wordmark-disc-light" aria-hidden="true"></span>
+        </h1>
+        <p class="mode-line" id="mode-line">Pass and play</p>
+      </header>
+
+      <main class="table">
+        <section class="board-area" aria-label="Board">
+          <div class="rim">
+            <div class="coords coords-cols" aria-hidden="true">
+              <span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span>
+            </div>
+            <div class="coords coords-rows" aria-hidden="true">
+              <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+            </div>
+            <div class="board" id="board" role="grid" aria-label="Othello board, 8 by 8" aria-describedby="board-help"></div>
+          </div>
+          <p class="visually-hidden" id="board-help">
+            Use the arrow keys to move between squares and Enter or Space to place a disc.
+          </p>
+
+          <div class="result" id="result" role="region" aria-labelledby="result-title" hidden>
+            <div class="result-card">
+              <h2 id="result-title">Black wins</h2>
+              <p class="result-detail" id="result-detail">Black 34 to 30</p>
+              <button type="button" class="btn btn-primary" id="play-again">Play again</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="side" aria-label="Game status and controls">
+          <ol class="players" aria-label="Score">
+            <li class="player" id="player-black" data-color="black">
+              <span class="chip chip-black" aria-hidden="true"></span>
+              <span class="player-name">Black</span>
+              <span class="player-role" id="role-black"></span>
+              <span class="player-count" id="count-black">2</span>
+            </li>
+            <li class="player" id="player-white" data-color="white">
+              <span class="chip chip-white" aria-hidden="true"></span>
+              <span class="player-name">White</span>
+              <span class="player-role" id="role-white"></span>
+              <span class="player-count" id="count-white">2</span>
+            </li>
+          </ol>
+
+          <div class="status">
+            <p class="turn" id="turn">Black to play</p>
+            <p class="notice" id="notice" hidden></p>
+            <p class="error" id="error" role="alert" hidden></p>
+          </div>
+          <p class="visually-hidden" id="announcer" aria-live="polite" aria-atomic="true"></p>
+
+          <div class="actions">
+            <button type="button" class="btn" id="undo" aria-keyshortcuts="U">Undo move</button>
+            <button type="button" class="btn" id="retry" hidden>Retry engine move</button>
+            <button type="button" class="btn" id="take-over" hidden>Play this side myself</button>
+          </div>
+
+          <div class="pace" id="pace-field" hidden>
+            <label for="pace">Pace</label>
+            <select id="pace">
+              <option value="relaxed">Relaxed</option>
+              <option value="normal" selected>Normal</option>
+              <option value="quick">Quick</option>
+              <option value="step">One move at a time</option>
+            </select>
+            <button type="button" class="btn" id="next-move" hidden>Next move</button>
+          </div>
+
+          <form class="new-game" id="new-game-form" aria-labelledby="new-game-title">
+            <h2 class="visually-hidden" id="new-game-title">New game</h2>
+            <div class="seat">
+              <label for="black-player"><span class="chip chip-black chip-small" aria-hidden="true"></span>Black</label>
+              <select id="black-player" name="black" aria-describedby="black-player-about">
+                <option value="human">Human</option>
+              </select>
+              <p class="seat-about" id="black-player-about"></p>
+            </div>
+            <div class="seat">
+              <label for="white-player"><span class="chip chip-white chip-small" aria-hidden="true"></span>White</label>
+              <select id="white-player" name="white" aria-describedby="white-player-about">
+                <option value="human">Human</option>
+              </select>
+              <p class="seat-about" id="white-player-about"></p>
+            </div>
+            <button type="submit" class="btn btn-primary" id="new-game">New game</button>
+          </form>
+
+          <div class="plugin-tools">
+            <button type="button" class="btn-link" id="reload-engines">Reload engines</button>
+            <details class="plugin-errors" id="plugin-errors" hidden>
+              <summary id="plugin-errors-summary">1 plugin failed to load</summary>
+              <ul id="plugin-errors-list"></ul>
+            </details>
+          </div>
+        </aside>
+      </main>
+    </div>
+  </body>
+</html>

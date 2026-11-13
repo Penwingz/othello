@@ -1,0 +1,768 @@
+/* Othello: a felt board on a club table. */
+
+:root {
+  --baize: #1e5a44;
+  --baize-deep: #16463a;
+  --rim: #5b3b26;
+  --rim-dark: #3f2818;
+  --rim-text: #ecdcc2;
+
+  --mineral: #e3eae5;
+  --ink: #173a2d;
+  --ink-soft: #3f5d51;
+  --line: #b7c6bd;
+  --surface: #f2f6f3;
+  --brass: #b8862e;
+  --danger: #8c2a1c;
+
+  --disc-black-1: #3b3d3c;
+  --disc-black-2: #121413;
+  --disc-white-1: #ffffff;
+  --disc-white-2: #d9dcd6;
+
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --gutter: 16px;
+  --radius: 6px;
+  --flip-ms: 420ms;
+  --ripple-ms: 55ms;
+  --dark-disc-rim: 0 0 0 0 transparent;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mineral: #132a21;
+    --ink: #dce8e1;
+    --ink-soft: #a9c0b4;
+    --line: #2e4d40;
+    --surface: #18322a;
+    --brass: #d3a248;
+    --danger: #f19a8a;
+    /* On the night-green page a black disc needs a faint rim to stay visible. */
+    --dark-disc-rim: 0 0 0 1px rgb(220 232 225 / 0.35);
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  background: var(--mineral);
+  color: var(--ink);
+  font: 1rem/1.5 var(--sans);
+  -webkit-text-size-adjust: 100%;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h2 {
+  font-family: var(--serif);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+
+.page {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 18px var(--gutter) 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.masthead {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: 14px;
+}
+
+/* The wordmark's o's are the two discs: a dark one to open, a light one to close. */
+.wordmark {
+  font: 600 2.1rem/1 var(--serif);
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.wordmark-disc {
+  width: 0.62em;
+  height: 0.62em;
+  border-radius: 50%;
+  margin: 0 0.03em;
+  align-self: center;
+  translate: 0 0.06em;
+}
+
+.wordmark-disc-dark {
+  background: radial-gradient(circle at 35% 30%, var(--disc-black-1), var(--disc-black-2) 70%);
+  box-shadow: var(--dark-disc-rim);
+}
+
+.wordmark-disc-light {
+  background: radial-gradient(circle at 35% 30%, var(--disc-white-1), var(--disc-white-2) 75%);
+  box-shadow: 0 0 0 1px rgb(23 58 45 / 0.3);
+}
+
+.mode-line {
+  color: var(--ink-soft);
+}
+
+.table {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .table {
+    grid-template-columns: minmax(0, auto) minmax(15rem, 18rem);
+    justify-content: start;
+    gap: 36px;
+  }
+}
+
+
+.board-area {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (min-width: 900px) {
+  .board-area {
+    /* as big as the window allows, leaving room for the side column */
+    width: min(46rem, calc(100svh - 7.5rem), calc(100vw - 22rem - 2 * var(--gutter)));
+    min-width: 26rem;
+  }
+}
+
+/* the walnut frame: square, coordinates in the top and left margins */
+.rim {
+  --coord: clamp(16px, 4.2%, 26px);
+  display: grid;
+  grid-template-columns: var(--coord) minmax(0, 1fr) var(--coord);
+  grid-template-rows: var(--coord) minmax(0, 1fr) var(--coord);
+  aspect-ratio: 1;
+  padding: 2px;
+  border-radius: 14px;
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 0.08), transparent 40%),
+    linear-gradient(var(--rim), var(--rim-dark));
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.15) inset,
+    0 18px 30px -18px rgb(23 58 45 / 0.6),
+    0 4px 10px -4px rgb(23 58 45 / 0.35);
+}
+
+.coords {
+  display: grid;
+  color: var(--rim-text);
+  font-family: var(--serif);
+  font-size: clamp(0.7rem, 2.6vw, 0.9rem);
+  line-height: 1;
+  user-select: none;
+}
+
+.coords span {
+  display: grid;
+  place-items: center;
+}
+
+.coords-cols {
+  grid-column: 2;
+  grid-row: 1;
+  grid-template-columns: repeat(8, 1fr);
+}
+
+.coords-rows {
+  grid-column: 1;
+  grid-row: 2;
+  grid-template-rows: repeat(8, 1fr);
+}
+
+/* the 2px gaps show the darker felt underneath: the grid lines */
+.board {
+  grid-column: 2;
+  grid-row: 2;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  gap: 2px;
+  padding: 2px;
+  background: var(--baize-deep);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.cell {
+  position: relative;
+  min-width: 0;
+  perspective: 600px;
+  border-radius: 2px;
+  background:
+    radial-gradient(circle at 30% 25%, rgb(255 255 255 / 0.06), transparent 60%),
+    var(--baize);
+}
+
+/* transparent button over the disc, so focusing it never hides anything */
+.sq {
+  all: unset;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 2px;
+  cursor: default;
+}
+
+.sq:focus-visible {
+  outline: 3px solid var(--brass);
+  outline-offset: -3px;
+  box-shadow: inset 0 0 0 5px rgb(22 70 58 / 0.55);
+  z-index: 3;
+}
+
+/* legal moves: a small dot, a ghost of your disc when you point at it */
+.cell.legal .sq {
+  cursor: pointer;
+}
+
+.cell.legal .sq::after {
+  content: "";
+  position: absolute;
+  inset: 41%;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.38);
+  transition:
+    inset 140ms ease-out,
+    opacity 140ms ease-out;
+}
+
+.board[data-turn="white"] .cell.legal .sq::after {
+  background: rgb(255 255 255 / 0.62);
+}
+
+.cell.legal .sq:hover::after,
+.cell.legal .sq:focus-visible::after {
+  inset: 9%;
+  opacity: 0.4;
+  background: radial-gradient(circle at 35% 30%, var(--disc-black-1), var(--disc-black-2) 70%);
+}
+
+.board[data-turn="white"] .cell.legal .sq:hover::after,
+.board[data-turn="white"] .cell.legal .sq:focus-visible::after {
+  opacity: 0.55;
+  background: radial-gradient(circle at 35% 30%, var(--disc-white-1), var(--disc-white-2) 75%);
+}
+
+.board.locked .sq {
+  cursor: progress;
+}
+
+.board.locked .cell.legal .sq::after {
+  opacity: 0;
+}
+
+/* discs have two faces and turn in 3D: black at 0deg, white at 180deg */
+.disc {
+  position: absolute;
+  inset: 9%;
+  pointer-events: none;
+  transform-style: preserve-3d;
+  transition: transform var(--flip-ms) cubic-bezier(0.3, 0.1, 0.25, 1);
+  transition-delay: var(--delay, 0ms);
+  transform: rotateY(0deg);
+}
+
+.cell[data-color="white"] .disc {
+  transform: rotateY(180deg);
+}
+
+.cell[data-color="empty"] .disc {
+  visibility: hidden;
+  transition: none;
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  backface-visibility: hidden;
+}
+
+.face-black {
+  background: radial-gradient(circle at 35% 30%, var(--disc-black-1), var(--disc-black-2) 70%);
+  box-shadow:
+    inset 0 -3px 4px rgb(0 0 0 / 0.5),
+    inset 0 2px 2px rgb(255 255 255 / 0.12),
+    0 3px 4px rgb(0 0 0 / 0.45);
+}
+
+.face-white {
+  transform: rotateY(180deg);
+  background: radial-gradient(circle at 35% 30%, var(--disc-white-1), var(--disc-white-2) 75%);
+  box-shadow:
+    inset 0 -3px 4px rgb(0 0 0 / 0.18),
+    inset 0 2px 2px rgb(255 255 255 / 0.9),
+    0 3px 4px rgb(0 0 0 / 0.4);
+}
+
+/* a new disc drops in slightly big and settles */
+.cell.placed .disc {
+  animation: settle 300ms cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+
+@keyframes settle {
+  from {
+    opacity: 0;
+    scale: 1.22;
+    translate: 0 -6%;
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+/* last move: a brass pip and a ring that glows once */
+.cell.last::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: var(--brass);
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 0.25);
+  pointer-events: none;
+  z-index: 2;
+  animation: glow 900ms ease-out;
+}
+
+@keyframes glow {
+  from {
+    box-shadow:
+      0 0 0 2px rgb(0 0 0 / 0.25),
+      0 0 0 0 rgb(211 162 72 / 0.75);
+  }
+  to {
+    box-shadow:
+      0 0 0 2px rgb(0 0 0 / 0.25),
+      0 0 0 14px rgb(211 162 72 / 0);
+  }
+}
+
+
+.result {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  border-radius: 14px;
+  background: rgb(19 42 33 / 0.55);
+  backdrop-filter: blur(1.5px);
+}
+
+.result-card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 22px 28px 24px;
+  text-align: center;
+  border-radius: 12px;
+  background: rgb(19 42 33 / 0.92);
+  border: 1px solid rgb(243 247 244 / 0.12);
+  color: #f3f7f4;
+  box-shadow: 0 20px 40px -20px rgb(0 0 0 / 0.7);
+}
+
+.result-card h2 {
+  font-size: clamp(1.75rem, 6vw, 2.6rem);
+}
+
+.result-detail {
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-variant-numeric: lining-nums tabular-nums;
+  margin-bottom: 10px;
+}
+
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.player {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+  padding: 8px 12px 8px 14px;
+  border-left: 3px solid transparent;
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.player.active {
+  border-left-color: var(--brass);
+  background: var(--surface);
+}
+
+.player .chip {
+  grid-row: 1 / span 2;
+}
+
+.player-name {
+  font-weight: 600;
+}
+
+/* long engine names get one line and an ellipsis (full name in the tooltip) */
+.player-role {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-count {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  font: 2rem/1 var(--serif);
+  font-variant-numeric: lining-nums tabular-nums;
+  min-width: 2ch;
+  text-align: right;
+}
+
+.chip {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+}
+
+.chip-small {
+  width: 14px;
+  height: 14px;
+}
+
+.chip-black {
+  background: radial-gradient(circle at 35% 30%, var(--disc-black-1), var(--disc-black-2) 70%);
+  box-shadow:
+    var(--dark-disc-rim),
+    0 2px 3px rgb(0 0 0 / 0.35);
+}
+
+.chip-white {
+  background: radial-gradient(circle at 35% 30%, var(--disc-white-1), var(--disc-white-2) 75%);
+  box-shadow:
+    0 0 0 1px rgb(23 58 45 / 0.25),
+    0 2px 3px rgb(0 0 0 / 0.25);
+}
+
+.player.thinking .chip {
+  animation: breathe 1.1s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  50% {
+    scale: 0.8;
+  }
+}
+
+.status {
+  display: grid;
+  gap: 8px;
+  min-height: 2rem;
+}
+
+.turn {
+  font: 1.375rem/1.25 var(--serif);
+}
+
+.notice {
+  padding: 8px 12px;
+  border-left: 3px solid var(--brass);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--surface);
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.actions,
+.pace {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pace label {
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+
+/* new game: one row per seat */
+.new-game {
+  display: grid;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.seat {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+}
+
+.seat label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.seat-about {
+  grid-column: 2;
+  font-size: 0.8125rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 2px 0;
+}
+
+.seat-about:empty {
+  display: none;
+}
+
+.plugin-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 14px;
+  font-size: 0.8125rem;
+  color: var(--ink-soft);
+}
+
+.plugin-errors summary {
+  cursor: pointer;
+  color: var(--danger);
+}
+
+.plugin-errors ul {
+  margin: 6px 0 0;
+  padding-left: 1.1em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+
+select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  min-height: 44px;
+  min-width: 0;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+
+.btn {
+  font: inherit;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 8px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface);
+}
+
+.btn:active:not(:disabled) {
+  translate: 0 1px;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--mineral);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--ink-soft);
+  border-color: var(--ink-soft);
+}
+
+.result-card .btn-primary {
+  background: #f3f7f4;
+  color: #173a2d;
+  border-color: #f3f7f4;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-link {
+  font: inherit;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.btn-link:hover {
+  color: var(--ink);
+}
+
+.btn:focus-visible,
+.btn-link:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--brass);
+  outline-offset: 2px;
+}
+
+/* phones and tablets: one centred column, scores above the board */
+
+@media (max-width: 899px) {
+  .page {
+    padding-top: 12px;
+    gap: 12px;
+    max-width: calc(36rem + 2 * var(--gutter));
+  }
+
+  .wordmark {
+    font-size: 1.8rem;
+  }
+
+  .table {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  /* flatten the side column so the score can sit above the board */
+  .side {
+    display: contents;
+  }
+
+  .players {
+    order: 0;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .board-area {
+    order: 1;
+    max-width: min(36rem, calc(100svh - 6rem));
+  }
+
+  .status,
+  .actions,
+  .pace,
+  .new-game,
+  .plugin-tools {
+    order: 2;
+  }
+}
+
+@media (max-width: 420px) {
+  .player {
+    column-gap: 8px;
+    padding: 6px 8px 6px 10px;
+  }
+
+  .player .chip {
+    width: 22px;
+    height: 22px;
+  }
+
+  .player-count {
+    font-size: 1.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disc,
+  .cell.legal .sq::after {
+    transition: none !important;
+  }
+
+  .cell.placed .disc,
+  .cell.last::after,
+  .player.thinking .chip {
+    animation: none !important;
+  }
+}
